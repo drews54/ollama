@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -31,8 +33,15 @@ func (s *server) loadImageModel() error {
 	}
 	availableMemory := mlx.GetMemoryLimit()
 	if availableMemory > 0 && requiredMemory > 0 && availableMemory < requiredMemory {
-		return fmt.Errorf("insufficient memory for image generation: need %d GB, have %d GB",
-			requiredMemory/(1024*1024*1024), availableMemory/(1024*1024*1024))
+		if imageGenAllowOversubscribe() {
+			slog.Warn("image generation memory preflight check overridden by environment variable; performance and stability may degrade",
+				"env", "OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE",
+				"required_gb", formatBytesToGiB(requiredMemory),
+				"available_gb", formatBytesToGiB(availableMemory))
+		} else {
+			return fmt.Errorf("insufficient memory for image generation: need %.1f GB, have %.1f GB (set OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE=1 to proceed at your own risk)",
+				formatBytesToGiB(requiredMemory), formatBytesToGiB(availableMemory))
+		}
 	}
 
 	// Detect model type and load appropriate model
@@ -58,6 +67,24 @@ func (s *server) loadImageModel() error {
 
 	s.imageModel = model
 	return nil
+}
+
+func imageGenAllowOversubscribe() bool {
+	value, ok := os.LookupEnv("OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE")
+	if !ok {
+		return false
+	}
+
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		return false
+	}
+
+	return enabled
+}
+
+func formatBytesToGiB(bytes uint64) float64 {
+	return float64(bytes) / (1024 * 1024 * 1024)
 }
 
 // handleImageCompletion handles image generation requests.

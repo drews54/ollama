@@ -68,6 +68,8 @@ Experimental image generation parameters (for image generation models only):
 - `height`: height of the generated image in pixels
 - `steps`: number of diffusion steps
 
+If an image generation model fails preflight memory checks on a borderline system, you can set `OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE=1` when starting the Ollama server to override this safety check. Use with caution: inference may become significantly slower and can trigger swap pressure or instability.
+
 #### Structured outputs
 
 Structured outputs are supported by providing a JSON schema in the `format` parameter. The model will generate a response that matches the schema. See the [structured outputs](#request-structured-outputs) example below.
