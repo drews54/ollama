@@ -203,6 +203,20 @@ func TestBool(t *testing.T) {
 	}
 }
 
+func TestImageGenAllowOversubscribeEnvVarInAsMap(t *testing.T) {
+	t.Setenv("OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE", "1")
+
+	envVars := AsMap()
+	v, ok := envVars["OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE"]
+	if !ok {
+		t.Fatal("OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE missing from AsMap")
+	}
+
+	if v.Value != "1" {
+		t.Fatalf("expected value %q, got %v", "1", v.Value)
+	}
+}
+
 func TestUint(t *testing.T) {
 	cases := map[string]uint{
 		"0":    0,

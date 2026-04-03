@@ -2304,6 +2304,7 @@ func NewCLI() *cobra.Command {
 				envVars["OLLAMA_DEBUG"],
 				envVars["OLLAMA_HOST"],
 				envVars["OLLAMA_CONTEXT_LENGTH"],
+				envVars["OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE"],
 				envVars["OLLAMA_KEEP_ALIVE"],
 				envVars["OLLAMA_MAX_LOADED_MODELS"],
 				envVars["OLLAMA_MAX_QUEUE"],

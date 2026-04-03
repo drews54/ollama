@@ -86,7 +86,16 @@ func (s *Server) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 			if requireFull {
 				return nil, llm.ErrLoadRequiredFull
 			}
-			return nil, fmt.Errorf("model requires %s but only %s are available (after %s overhead)", format.HumanBytes2(s.vramSize), format.HumanBytes2(available), format.HumanBytes2(overhead))
+			if imageGenAllowOversubscribe() {
+				slog.Warn("image generation memory preflight check overridden by environment variable; performance and stability may degrade",
+					"env", "OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE",
+					"required", format.HumanBytes2(s.vramSize),
+					"available", format.HumanBytes2(available),
+					"overhead", format.HumanBytes2(overhead))
+			} else {
+				return nil, fmt.Errorf("model requires %s but only %s are available (after %s overhead; set OLLAMA_IMAGEGEN_ALLOW_OVERSUBSCRIBE=1 to proceed at your own risk)",
+					format.HumanBytes2(s.vramSize), format.HumanBytes2(available), format.HumanBytes2(overhead))
+			}
 		}
 	}
 
