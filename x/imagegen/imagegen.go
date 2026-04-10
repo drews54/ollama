@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ollama/ollama/envconfig"
+	"github.com/ollama/ollama/format"
 	"github.com/ollama/ollama/x/imagegen/manifest"
 	"github.com/ollama/ollama/x/imagegen/mlx"
 	"github.com/ollama/ollama/x/imagegen/models/flux2"
@@ -30,9 +32,10 @@ func (s *server) loadImageModel() error {
 		requiredMemory = uint64(modelManifest.TotalTensorSize())
 	}
 	availableMemory := mlx.GetMemoryLimit()
-	if availableMemory > 0 && requiredMemory > 0 && availableMemory < requiredMemory {
-		return fmt.Errorf("insufficient memory for image generation: need %d GB, have %d GB",
-			requiredMemory/(1024*1024*1024), availableMemory/(1024*1024*1024))
+	strictMemoryFit := envconfig.ImageGenStrictMemoryFit(true)
+	slog.Info("imagegen runner memory fit policy", "strict", strictMemoryFit)
+	if err := validateImageRunnerMemoryFit(requiredMemory, availableMemory, strictMemoryFit); err != nil {
+		return err
 	}
 
 	// Detect model type and load appropriate model
@@ -57,6 +60,19 @@ func (s *server) loadImageModel() error {
 	}
 
 	s.imageModel = model
+	return nil
+}
+
+func validateImageRunnerMemoryFit(requiredMemory, availableMemory uint64, strictMemoryFit bool) error {
+	if !strictMemoryFit {
+		return nil
+	}
+
+	if availableMemory > 0 && requiredMemory > 0 && availableMemory < requiredMemory {
+		return fmt.Errorf("insufficient memory for image generation: need %s, have %s",
+			format.HumanBytes2(requiredMemory), format.HumanBytes2(availableMemory))
+	}
+
 	return nil
 }
 
