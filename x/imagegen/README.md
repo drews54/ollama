@@ -127,6 +127,12 @@ data: {"created": 1704067200, "data": [{"b64_json": "..."}]}
 - Sufficient VRAM (see model table above)
 - Ollama built with MLX support
 
+## Runtime Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OLLAMA_IMAGEGEN_STRICT_MEMORY_FIT` | `true` | When `true`, image generation model load is rejected if estimated model VRAM exceeds available GPU memory (after overhead). Set to `false` to allow permissive launch (oversubscribe). |
+
 ## Limitations
 
 - macOS only (uses MLX backend)
@@ -247,4 +253,3 @@ ollama create z-image-fp8 --quantize fp8
 ```
 
 This quantizes weights during import. The resulting model will be ~15GB instead of ~31GB.
-

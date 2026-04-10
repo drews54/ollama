@@ -293,6 +293,26 @@ func TestLoadTimeout(t *testing.T) {
 	}
 }
 
+func TestImageGenStrictMemoryFit(t *testing.T) {
+	cases := map[string]bool{
+		"":       true, // default
+		"true":   true,
+		"false":  false,
+		"1":      true,
+		"0":      false,
+		"random": true, // invalid values are treated as enabled
+	}
+
+	for tt, expect := range cases {
+		t.Run(tt, func(t *testing.T) {
+			t.Setenv("OLLAMA_IMAGEGEN_STRICT_MEMORY_FIT", tt)
+			if actual := ImageGenStrictMemoryFit(true); actual != expect {
+				t.Errorf("%s: expected %t, got %t", tt, expect, actual)
+			}
+		})
+	}
+}
+
 func TestVar(t *testing.T) {
 	cases := map[string]string{
 		"value":       "value",
