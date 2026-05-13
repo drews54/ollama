@@ -73,6 +73,9 @@ func (s *Server) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 		s.vramSize = 8 * 1024 * 1024 * 1024
 	}
 
+	strictMemoryFit := envconfig.ImageGenStrictMemoryFit(true)
+	slog.Info("imagegen memory fit policy", "strict", strictMemoryFit)
+
 	if len(gpus) > 0 {
 		available := gpus[0].FreeMemory
 		overhead := gpus[0].MinimumMemory() + envconfig.GpuOverhead()
@@ -82,11 +85,8 @@ func (s *Server) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 			available = 0
 		}
 
-		if s.vramSize > available {
-			if requireFull {
-				return nil, llm.ErrLoadRequiredFull
-			}
-			return nil, fmt.Errorf("model requires %s but only %s are available (after %s overhead)", format.HumanBytes2(s.vramSize), format.HumanBytes2(available), format.HumanBytes2(overhead))
+		if err := validateImageModelMemoryFit(s.vramSize, available, overhead, requireFull, strictMemoryFit); err != nil {
+			return nil, err
 		}
 	}
 
@@ -151,6 +151,18 @@ func (s *Server) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 	}()
 
 	return nil, nil
+}
+
+func validateImageModelMemoryFit(modelSize, available, overhead uint64, requireFull, strictMemoryFit bool) error {
+	if !strictMemoryFit || modelSize <= available {
+		return nil
+	}
+
+	if requireFull {
+		return llm.ErrLoadRequiredFull
+	}
+
+	return fmt.Errorf("model requires %s but only %s are available (after %s overhead)", format.HumanBytes2(modelSize), format.HumanBytes2(available), format.HumanBytes2(overhead))
 }
 
 // Ping checks if the subprocess is healthy.
